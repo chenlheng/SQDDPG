@@ -4,7 +4,6 @@ from torch.distributions.one_hot_categorical import OneHotCategorical
 from torch.distributions.normal import Normal
 
 
-
 class GumbelSoftmax(OneHotCategorical):
 
     def __init__(self, logits, probs=None, temperature=0.1):
@@ -15,11 +14,11 @@ class GumbelSoftmax(OneHotCategorical):
     def sample_gumbel(self):
         U = self.logits.clone()
         U.uniform_(0, 1)
-        return -torch.log( -torch.log( U + self.eps ) )
+        return -torch.log(-torch.log(U + self.eps))
 
     def gumbel_softmax_sample(self):
         y = self.logits + self.sample_gumbel()
-        return torch.softmax( y / self.temperature, dim=-1)
+        return torch.softmax(y / self.temperature, dim=-1)
 
     def hard_gumbel_softmax_sample(self):
         y = self.gumbel_softmax_sample()
@@ -35,20 +34,23 @@ class GumbelSoftmax(OneHotCategorical):
         return self.hard_gumbel_softmax_sample()
 
 
-
 def normal_entropy(mean, std):
     return Normal(mean, std).entropy().sum()
+
 
 def multinomial_entropy(logits):
     assert logits.size(-1) > 1
     return GumbelSoftmax(logits=logits).entropy().sum()
 
+
 def normal_log_density(x, mean, std):
     return Normal(mean, std).log_prob(x)
 
+
 def multinomials_log_density(actions, logits):
     assert logits.size(-1) > 1
-    return GumbelSoftmax(logits=logits).log_prob(actions)
+    return GumbelSoftmax(logits=logits).log_prob(actions)  # equivalent to OneCat().log_prob()
+
 
 def select_action(args, logits, status='train', exploration=True, info={}):
     if args.continuous:
@@ -72,12 +74,13 @@ def select_action(args, logits, status='train', exploration=True, info={}):
             else:
                 if args.gumbel_softmax:
                     temperature = 1.0
-                    return torch.softmax(logits/temperature, dim=-1)
+                    return torch.softmax(logits / temperature, dim=-1)
                 else:
                     return OneHotCategorical(logits=logits).sample()
         elif status is 'test':
             p_a = torch.softmax(logits, dim=-1)
-            return  (p_a == torch.max(p_a, dim=-1, keepdim=True)[0]).float()
+            return (p_a == torch.max(p_a, dim=-1, keepdim=True)[0]).float()
+
 
 def translate_action(args, action, env):
     if not args.continuous:
@@ -94,6 +97,7 @@ def translate_action(args, action, env):
             cp_actions[i] = 0.5 * (cp_actions[i] + 1.0) * (high - low) + low
         return actions, cp_actions
 
+
 def prep_obs(state=[]):
     state = np.array(state)
     if len(state.shape) == 2:
@@ -104,11 +108,13 @@ def prep_obs(state=[]):
         raise RuntimeError('The shape of the observation is incorrect.')
     return torch.tensor(state).float()
 
+
 def cuda_wrapper(tensor, cuda):
     if isinstance(tensor, torch.Tensor):
         return tensor.cuda() if cuda else tensor
     else:
         raise RuntimeError('Please enter a pytorch tensor, now a {} is received.'.format(type(tensor)))
+
 
 def batchnorm(batch):
     if isinstance(batch, torch.Tensor):
@@ -117,17 +123,20 @@ def batchnorm(batch):
     else:
         raise RuntimeError('Please enter a pytorch tensor, now a {} is received.'.format(type(batch)))
 
+
 def get_grad_norm(params):
     grad_norms = []
     for param in params:
         grad_norms.append(torch.norm(param.grad).item())
     return np.mean(grad_norms)
 
+
 def merge_dict(stat, key, value):
     if key in stat.keys():
         stat[key] += value
     else:
         stat[key] = value
+
 
 def unpack_data(args, batch):
     batch_size = len(batch.state)
@@ -138,28 +147,39 @@ def unpack_data(args, batch):
     last_step = cuda_wrapper(torch.tensor(batch.last_step, dtype=torch.float).contiguous().view(-1, 1), cuda)
     done = cuda_wrapper(torch.tensor(batch.done, dtype=torch.float).contiguous().view(-1, 1), cuda)
     actions = cuda_wrapper(torch.tensor(np.stack(list(zip(*batch.action))[0], axis=0), dtype=torch.float), cuda)
-    last_actions = cuda_wrapper(torch.tensor(np.stack(list(zip(*batch.last_action))[0], axis=0), dtype=torch.float), cuda)
+    last_actions = cuda_wrapper(torch.tensor(np.stack(list(zip(*batch.last_action))[0], axis=0), dtype=torch.float),
+                                cuda)
     state = cuda_wrapper(prep_obs(list(zip(batch.state))), cuda)
     next_state = cuda_wrapper(prep_obs(list(zip(batch.next_state))), cuda)
     return (rewards, last_step, done, actions, last_actions, state, next_state)
 
+
 def n_step(rewards, last_step, done, next_values, n_step, args):
     cuda = torch.cuda.is_available() and args.cuda
     returns = cuda_wrapper(torch.zeros_like(rewards), cuda=cuda)
-    i = rewards.size(0)-1
+    i = rewards.size(0) - 1
     while i >= 0:
         if last_step[i]:
             next_return = 0 if done[i] else next_values[i].detach()
-            for j in reversed(range(i-n_step+1, i+1)):
+            for j in reversed(range(i - n_step + 1, i + 1)):
                 returns[j] = rewards[j] + args.gamma * next_return
                 next_return = returns[j]
             i -= n_step
             continue
         else:
-            next_return = next_values[i+n_step-1].detach()
+            next_return = next_values[i + n_step - 1].detach()
         for j in reversed(range(n_step)):
-            g = rewards[i+j] + args.gamma * next_return
+            g = rewards[i + j] + args.gamma * next_return
             next_return = g
         returns[i] = g.detach()
         i -= 1
     return returns
+
+
+if __name__ == '__main__':
+    logits = torch.Tensor(np.random.random((2, 3)))
+    pd_1 = OneHotCategorical(logits=logits)
+    pd_2 = GumbelSoftmax(logits=logits)
+    act = pd_1.sample()
+    print('probs', pd_1.probs, pd_2.probs)
+    print('log_prob', pd_1.log_prob(act), pd_2.log_prob(act))

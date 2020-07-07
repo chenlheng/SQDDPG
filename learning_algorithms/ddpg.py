@@ -2,7 +2,6 @@ from learning_algorithms.rl_algorithms import *
 from utilities.util import *
 
 
-
 class DDPG(ReinforcementLearning):
 
     def __init__(self, args):

@@ -5,8 +5,6 @@ from models.coma import *
 from aux import *
 from environments.traffic_junction_env import TrafficJunctionEnv
 
-
-
 '''define the model name'''
 model_name = 'coma_fc'
 
@@ -22,7 +20,7 @@ scenario_name = 'traffic_junction'
 env = TrafficJunctionEnv()
 env = GymWrapper(env)
 
-MergeArgs = namedtuple('MergeArgs', Args._fields+AuxArgs[model_name]._fields)
+MergeArgs = namedtuple('MergeArgs', Args._fields + AuxArgs[model_name]._fields)
 
 # under offline trainer if set batch_size=replay_buffer_size=update_freq -> epoch update
 args = Args(model_name=model_name,
@@ -59,8 +57,8 @@ args = Args(model_name=model_name,
             online=False,
             reward_record_type='episode_mean_step',
             shared_parameters=False
-           )
+            )
 
-args = MergeArgs(*(args+aux_args))
+args = MergeArgs(*(args + aux_args))
 
 log_name = scenario_name + '_' + model_name + alias

@@ -3,9 +3,9 @@ from utilities.tester import *
 from arguments import *
 import argparse
 
-
 parser = argparse.ArgumentParser(description='Test rl agent.')
-parser.add_argument('--save-model-dir', type=str, nargs='?', default='./model_save/', help='Please input the directory of saving model.')
+parser.add_argument('--save-model-dir', type=str, nargs='?', default='./model_save/',
+                    help='Please input the directory of saving model.')
 parser.add_argument('--render', action='store_true', help='Please input the flag to control the render.')
 parser.add_argument('--episodes', type=int, default=10, help='Please input the number of test episodes')
 
@@ -18,7 +18,7 @@ strategy = Strategy[model_name]
 if argv.save_model_dir[-1] is '/':
     save_path = argv.save_model_dir
 else:
-    save_path = argv.save_model_dir+'/'
+    save_path = argv.save_model_dir + '/'
 
 PATH = save_path + log_name + '/model.pt'
 

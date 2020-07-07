@@ -2,6 +2,7 @@ import numpy as np
 from multiagent.core import World, Agent, Landmark
 from multiagent.scenario import BaseScenario
 
+
 class Scenario(BaseScenario):
     def make_world(self):
         world = World()
@@ -65,14 +66,15 @@ class Scenario(BaseScenario):
 
     def adversary_reward(self, agent, world):
         # keep the nearest good agents away from the goal
-        agent_dist = [np.sqrt(np.sum(np.square(a.state.p_pos - a.goal_a.state.p_pos))) for a in world.agents if not a.adversary]
+        agent_dist = [np.sqrt(np.sum(np.square(a.state.p_pos - a.goal_a.state.p_pos))) for a in world.agents if
+                      not a.adversary]
         pos_rew = min(agent_dist)
-        #nearest_agent = world.good_agents[np.argmin(agent_dist)]
-        #neg_rew = np.sqrt(np.sum(np.square(nearest_agent.state.p_pos - agent.state.p_pos)))
+        # nearest_agent = world.good_agents[np.argmin(agent_dist)]
+        # neg_rew = np.sqrt(np.sum(np.square(nearest_agent.state.p_pos - agent.state.p_pos)))
         neg_rew = np.sqrt(np.sum(np.square(agent.goal_a.state.p_pos - agent.state.p_pos)))
-        #neg_rew = sum([np.sqrt(np.sum(np.square(a.state.p_pos - agent.state.p_pos))) for a in world.good_agents])
+        # neg_rew = sum([np.sqrt(np.sum(np.square(a.state.p_pos - agent.state.p_pos))) for a in world.good_agents])
         return pos_rew - neg_rew
-               
+
     def observation(self, agent, world):
         # get positions of all entities in this agent's reference frame
         entity_pos = []
@@ -90,7 +92,8 @@ class Scenario(BaseScenario):
             comm.append(other.state.c)
             other_pos.append(other.state.p_pos - agent.state.p_pos)
         if not agent.adversary:
-            return np.concatenate([agent.state.p_vel] + [agent.goal_a.state.p_pos - agent.state.p_pos] + [agent.color] + entity_pos + entity_color + other_pos)
+            return np.concatenate([agent.state.p_vel] + [agent.goal_a.state.p_pos - agent.state.p_pos] + [
+                agent.color] + entity_pos + entity_color + other_pos)
         else:
-            #other_pos = list(reversed(other_pos)) if random.uniform(0,1) > 0.5 else other_pos  # randomize position of other agents in adversary network
+            # other_pos = list(reversed(other_pos)) if random.uniform(0,1) > 0.5 else other_pos  # randomize position of other agents in adversary network
             return np.concatenate([agent.state.p_vel] + entity_pos + other_pos)

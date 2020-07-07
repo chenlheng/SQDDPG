@@ -32,7 +32,7 @@ from gym import spaces
 class PredatorPreyEnv(gym.Env):
     # metadata = {'render.modes': ['human']}
 
-    def __init__(self,):
+    def __init__(self, ):
         self.__version__ = "0.0.1"
 
         # TODO: better config handling
@@ -45,14 +45,14 @@ class PredatorPreyEnv(gym.Env):
         self.episode_over = False
 
         # init args
-        self.nprey = 1 # Total number of preys in play
-        self.npredator = 3 # Total number of predators in play
-        self.no_stay = False # Whether predators have an action to stay in place
+        self.nprey = 1  # Total number of preys in play
+        self.npredator = 3  # Total number of predators in play
+        self.no_stay = False  # Whether predators have an action to stay in place
         self.dim = 5  # Dimension of box
-        self.vision = 1 # Vision of predator
-        self.moving_prey = False # Whether prey is fixed or moxing
-        self.mode = 'cooperative' # cooperative|competitive|mixed (default: mixed)
-        self.enemy_comm = False # Whether prey can communicate
+        self.vision = 1  # Vision of predator
+        self.moving_prey = False  # Whether prey is fixed or moxing
+        self.mode = 'cooperative'  # cooperative|competitive|mixed (default: mixed)
+        self.enemy_comm = False  # Whether prey can communicate
         self.n = self.npredator if not self.enemy_comm else self.nprey + self.npredator
 
         self.dims = dims = (self.dim, self.dim)
@@ -69,7 +69,6 @@ class PredatorPreyEnv(gym.Env):
         else:
             self.naction = 4
 
-
         self.BASE = (dims[0] * dims[1])
         self.OUTSIDE_CLASS += self.BASE
         self.PREY_CLASS += self.BASE
@@ -79,8 +78,8 @@ class PredatorPreyEnv(gym.Env):
         self.vocab_size = 1 + 1 + self.BASE + 1 + 1
         #          predator + prey + grid + outside
         # observation dim
-        self.obs_dim = self.vocab_size*(2*self.vision+1)*(2*self.vision+1)
-        
+        self.obs_dim = self.vocab_size * (2 * self.vision + 1) * (2 * self.vision + 1)
+
         # gym like environment
         self.action_space = []
         self.observation_space = []
@@ -90,7 +89,6 @@ class PredatorPreyEnv(gym.Env):
             # Observation for each agent will be vision * vision ndarray
             self.observation_space.append(spaces.Box(low=0, high=1, shape=(self.obs_dim,), dtype=int))
         return
-
 
     def step(self, action):
         """
@@ -120,7 +118,7 @@ class PredatorPreyEnv(gym.Env):
         self.episode_over = False
         self.obs = self._get_obs()
 
-        debug = {'predator_locs':self.predator_loc,'prey_locs':self.prey_loc}
+        debug = {'predator_locs': self.predator_loc, 'prey_locs': self.prey_loc}
         return self._flatten_obs(self.obs), self._get_reward(), self.episode_over, debug
 
     def reset(self):
@@ -147,7 +145,7 @@ class PredatorPreyEnv(gym.Env):
         return self._flatten_obs(self.obs)
 
     def _get_cordinates(self):
-        idx = np.random.choice(np.prod(self.dims),(self.npredator + self.nprey), replace=False)
+        idx = np.random.choice(np.prod(self.dims), (self.npredator + self.nprey), replace=False)
         return np.vstack(np.unravel_index(idx, self.dims)).T
 
     def _set_grid(self):
@@ -157,13 +155,12 @@ class PredatorPreyEnv(gym.Env):
         # self.grid[self.prey_loc[:,0], self.prey_loc[:,1]] = self.prey_ids
 
         # Padding for vision
-        self.grid = np.pad(self.grid, self.vision, 'constant', constant_values = self.OUTSIDE_CLASS)
+        self.grid = np.pad(self.grid, self.vision, 'constant', constant_values=self.OUTSIDE_CLASS)
 
         self.empty_bool_base_grid = self._onehot_initialization(self.grid)
 
     def _get_obs(self):
         self.bool_base_grid = self.empty_bool_base_grid.copy()  # size: 7*7*29=(dim+2*vision)*(dim+2*vision)*vocab
-
 
         for i, p in enumerate(self.predator_loc):
             self.bool_base_grid[p[0] + self.vision, p[1] + self.vision, self.PREDATOR_CLASS] += 1
@@ -199,39 +196,39 @@ class PredatorPreyEnv(gym.Env):
             return
 
         # STAY action
-        if act==5:
+        if act == 5:
             return
 
         # UP
-        if act==0 and self.grid[max(0,
-                                self.predator_loc[idx][0] + self.vision - 1),
-                                self.predator_loc[idx][1] + self.vision] != self.OUTSIDE_CLASS:
-            self.predator_loc[idx][0] = max(0, self.predator_loc[idx][0]-1)
+        if act == 0 and self.grid[max(0,
+                                      self.predator_loc[idx][0] + self.vision - 1),
+                                  self.predator_loc[idx][1] + self.vision] != self.OUTSIDE_CLASS:
+            self.predator_loc[idx][0] = max(0, self.predator_loc[idx][0] - 1)
 
         # RIGHT
-        elif act==1 and self.grid[self.predator_loc[idx][0] + self.vision,
-                                min(self.dims[1] -1,
-                                    self.predator_loc[idx][1] + self.vision + 1)] != self.OUTSIDE_CLASS:
-            self.predator_loc[idx][1] = min(self.dims[1]-1,
-                                            self.predator_loc[idx][1]+1)
+        elif act == 1 and self.grid[self.predator_loc[idx][0] + self.vision,
+                                    min(self.dims[1] - 1,
+                                        self.predator_loc[idx][1] + self.vision + 1)] != self.OUTSIDE_CLASS:
+            self.predator_loc[idx][1] = min(self.dims[1] - 1,
+                                            self.predator_loc[idx][1] + 1)
 
         # DOWN
-        elif act==2 and self.grid[min(self.dims[0]-1,
-                                    self.predator_loc[idx][0] + self.vision + 1),
+        elif act == 2 and self.grid[min(self.dims[0] - 1,
+                                        self.predator_loc[idx][0] + self.vision + 1),
                                     self.predator_loc[idx][1] + self.vision] != self.OUTSIDE_CLASS:
-            self.predator_loc[idx][0] = min(self.dims[0]-1,
-                                            self.predator_loc[idx][0]+1)
+            self.predator_loc[idx][0] = min(self.dims[0] - 1,
+                                            self.predator_loc[idx][0] + 1)
 
         # LEFT
-        elif act==3 and self.grid[self.predator_loc[idx][0] + self.vision,
+        elif act == 3 and self.grid[self.predator_loc[idx][0] + self.vision,
                                     max(0,
-                                    self.predator_loc[idx][1] + self.vision - 1)] != self.OUTSIDE_CLASS:
-            self.predator_loc[idx][1] = max(0, self.predator_loc[idx][1]-1)
+                                        self.predator_loc[idx][1] + self.vision - 1)] != self.OUTSIDE_CLASS:
+            self.predator_loc[idx][1] = max(0, self.predator_loc[idx][1] - 1)
 
     def _get_reward(self):
         reward = np.full(self.n, self.TIMESTEP_PENALTY)
 
-        on_prey = np.where(np.all(self.predator_loc == self.prey_loc,axis=1))[0]
+        on_prey = np.where(np.all(self.predator_loc == self.prey_loc, axis=1))[0]
         nb_predator_on_prey = on_prey.size
 
         if self.mode == 'cooperative':
@@ -268,7 +265,6 @@ class PredatorPreyEnv(gym.Env):
             mean_reward = reward.mean()
             reward = np.full(self.n, mean_reward)
         return reward
-
 
     def _onehot_initialization(self, a):
         ncols = self.vocab_size
@@ -318,7 +314,7 @@ class PredatorPreyEnv(gym.Env):
                     elif 'X' in item:
                         self.stdscr.addstr(row_num, idx * 4, item.center(3), curses.color_pair(1))
                     else:
-                        self.stdscr.addstr(row_num, idx * 4, item.center(3),  curses.color_pair(2))
+                        self.stdscr.addstr(row_num, idx * 4, item.center(3), curses.color_pair(2))
                 else:
                     self.stdscr.addstr(row_num, idx * 4, '0'.center(3), curses.color_pair(4))
 

@@ -5,7 +5,6 @@ from utilities.gym_wrapper import *
 import numpy as np
 from aux import *
 
-
 '''define the model name'''
 model_name = 'coma_fc'
 
@@ -18,16 +17,17 @@ aux_args = AuxArgs[model_name]()
 alias = '_new_1'
 
 '''load scenario from script'''
-scenario = scenario.load(scenario_name+".py").Scenario()
+scenario = scenario.load(scenario_name + ".py").Scenario()
 
 '''create world'''
 world = scenario.make_world()
 
 '''create multiagent environment'''
-env = MultiAgentEnv(world, scenario.reset_world, scenario.reward, scenario.observation, info_callback=None, shared_viewer=True)
+env = MultiAgentEnv(world, scenario.reset_world, scenario.reward, scenario.observation, info_callback=None,
+                    shared_viewer=True)
 env = GymWrapper(env)
 
-MergeArgs = namedtuple('MergeArgs', Args._fields+AuxArgs[model_name]._fields)
+MergeArgs = namedtuple('MergeArgs', Args._fields + AuxArgs[model_name]._fields)
 
 # under offline trainer if set batch_size=replay_buffer_size=update_freq -> epoch update
 args = Args(model_name=model_name,
@@ -64,8 +64,8 @@ args = Args(model_name=model_name,
             online=True,
             reward_record_type='episode_mean_step',
             shared_parameters=True
-           )
+            )
 
-args = MergeArgs(*(args+aux_args))
+args = MergeArgs(*(args + aux_args))
 
 log_name = scenario_name + '_' + model_name + alias

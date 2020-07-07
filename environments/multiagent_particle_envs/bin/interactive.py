@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-import os,sys
+import os, sys
+
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 import argparse
 
@@ -18,11 +19,12 @@ if __name__ == '__main__':
     # create world
     world = scenario.make_world()
     # create multiagent environment
-    env = MultiAgentEnv(world, scenario.reset_world, scenario.reward, scenario.observation, info_callback=None, shared_viewer = False)
+    env = MultiAgentEnv(world, scenario.reset_world, scenario.reward, scenario.observation, info_callback=None,
+                        shared_viewer=False)
     # render call to create viewer window (necessary only for interactive policies)
     env.render()
     # create interactive policies for each agent
-    policies = [InteractivePolicy(env,i) for i in range(env.n)]
+    policies = [InteractivePolicy(env, i) for i in range(env.n)]
     # execution loop
     obs_n = env.reset()
     while True:
@@ -35,5 +37,5 @@ if __name__ == '__main__':
         # render all agent views
         env.render()
         # display rewards
-        #for agent in env.world.agents:
+        # for agent in env.world.agents:
         #    print(agent.name + " reward: %0.3f" % env._get_reward(agent))

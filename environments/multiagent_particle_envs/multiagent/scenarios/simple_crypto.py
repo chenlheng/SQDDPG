@@ -4,7 +4,6 @@ Scenario:
 adversary to goal. Adversary is rewarded for its distance to the goal.
 """
 
-
 import numpy as np
 from multiagent.core import World, Agent, Landmark
 from multiagent.scenario import BaseScenario
@@ -15,6 +14,7 @@ class CryptoAgent(Agent):
     def __init__(self):
         super(CryptoAgent, self).__init__()
         self.key = None
+
 
 class Scenario(BaseScenario):
 
@@ -42,7 +42,6 @@ class Scenario(BaseScenario):
         # make initial conditions
         self.reset_world(world)
         return world
-
 
     def reset_world(self, world):
         # random properties for agents
@@ -73,7 +72,6 @@ class Scenario(BaseScenario):
         for i, landmark in enumerate(world.landmarks):
             landmark.state.p_pos = np.random.uniform(-1, +1, world.dim_p)
             landmark.state.p_vel = np.zeros(world.dim_p)
-
 
     def benchmark_data(self, agent, world):
         # returns data for benchmarking purposes
@@ -119,7 +117,6 @@ class Scenario(BaseScenario):
         if not (agent.state.c == np.zeros(world.dim_c)).all():
             rew -= np.sum(np.square(agent.state.c - agent.goal_a.color))
         return rew
-
 
     def observation(self, agent, world):
         # goal color

@@ -6,15 +6,15 @@ import numpy as np
 from aux import *
 
 '''define the model name'''
-model_name = 'maddpg'
+model_name = 'sqddpg'
 
 '''define the scenario name'''
-scenario_name = 'simple_tag'
+scenario_name = 'simple_spread_6'
 
 '''define the special property'''
-# maddpgArgs = namedtuple( 'maddpgArgs', [] )
-aux_args = AuxArgs[model_name]()
-alias = ''
+# sqddpgArgs = namedtuple( 'sqddpgArgs', ['sample_size'] )
+aux_args = AuxArgs[model_name](5)
+alias = '_new_sample_12'
 
 '''load scenario from script'''
 scenario = scenario.load(scenario_name + ".py").Scenario()
@@ -24,7 +24,7 @@ world = scenario.make_world()
 
 '''create multiagent environment'''
 env = MultiAgentEnv(world, scenario.reset_world, scenario.reward, scenario.observation, info_callback=None,
-                    shared_viewer=True, done_callback=scenario.episode_over)
+                    shared_viewer=True)
 env = GymWrapper(env)
 
 MergeArgs = namedtuple('MergeArgs', Args._fields + AuxArgs[model_name]._fields)
@@ -32,23 +32,23 @@ MergeArgs = namedtuple('MergeArgs', Args._fields + AuxArgs[model_name]._fields)
 # under offline trainer if set batch_size=replay_buffer_size=update_freq -> epoch update
 args = Args(model_name=model_name,
             agent_num=env.get_num_of_agents(),
-            hid_size=128,
+            hid_size=32,
             obs_size=np.max(env.get_shape_of_obs()),
             continuous=False,
             action_dim=np.max(env.get_output_shape_of_act()),
             init_std=0.1,
             policy_lrate=1e-4,
-            value_lrate=5e-4,
-            max_steps=200,
-            batch_size=128,  # 1024
-            gamma=0.99,
+            value_lrate=1e-3,
+            max_steps=25,
+            batch_size=32,
+            gamma=0.9,
             normalize_advantages=False,
-            entr=1e-3,
+            entr=1e-2,
             entr_inc=0.0,
             action_num=np.max(env.get_input_shape_of_act()),
             q_func=True,
-            train_episodes_num=int(6e4),  # 6e4
-            # train_episodes_num=int(5e3),  # 6e4
+            # train_episodes_num=int(18e4),  # 6e4
+            train_episodes_num=int(1e3),  # test
             replay=True,
             replay_buffer_size=1e4,
             replay_warmup=0,

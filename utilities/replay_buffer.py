@@ -29,7 +29,6 @@ class TransReplayBuffer(object):
         self.buffer = []
 
 
-
 class EpisodeReplayBuffer(object):
 
     def __init__(self, size):

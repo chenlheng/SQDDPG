@@ -6,9 +6,8 @@ import torch.nn as nn
 from utilities.util import *
 from utilities.replay_buffer import *
 from utilities.inspector import *
-from arguments import *
+# from arguments import *
 from utilities.logger import Logger
-
 
 
 class PGTrainer(object):
@@ -36,7 +35,7 @@ class PGTrainer(object):
         self.value_optimizers = []
         for value_dict in self.behaviour_net.value_dicts:
             self.value_optimizers.append(optim.Adam(value_dict.parameters(), lr=args.value_lrate))
-        self.init_action = cuda_wrapper( torch.zeros(1, self.args.agent_num, self.args.action_dim), cuda=self.cuda_ )
+        self.init_action = cuda_wrapper(torch.zeros(1, self.args.agent_num, self.args.action_dim), cuda=self.cuda_)
         self.steps = 0
         self.episodes = 0
         self.mean_reward = 0
@@ -75,10 +74,10 @@ class PGTrainer(object):
         self.value_transition_process(stat, batch)
 
     def action_transition_process(self, stat, trans):
-        action_loss, value_loss, log_p_a = self.get_loss(trans)
+        action_loss, _, log_p_a = self.get_loss(trans)
         policy_grads = []
         for i in range(self.args.agent_num):
-            retain_graph = False if i == self.args.agent_num-1 else True
+            retain_graph = False if i == self.args.agent_num - 1 else True
             action_optimizer = self.action_optimizers[i]
             action_optimizer.zero_grad()
             self.action_compute_grad(stat, (action_loss[i], log_p_a[:, i, :]), retain_graph)
@@ -91,7 +90,7 @@ class PGTrainer(object):
             param = action_optimizer.param_groups[0]['params']
             for i in range(len(param)):
                 param[i].grad = grad[i]
-            if self.args.grad_clip:
+            if self.args.grad_clip:  # True
                 self.grad_clip(param)
             policy_grad_norms.append(get_grad_norm(param))
             action_optimizer.step()
@@ -99,10 +98,10 @@ class PGTrainer(object):
         stat['action_loss'] = action_loss.mean().item()
 
     def value_transition_process(self, stat, trans):
-        action_loss, value_loss, log_p_a = self.get_loss(trans)
+        _, value_loss, _ = self.get_loss(trans)
         value_grads = []
         for i in range(self.args.agent_num):
-            retain_graph = False if i == self.args.agent_num-1 else True
+            retain_graph = False if i == self.args.agent_num - 1 else True
             value_optimizer = self.value_optimizers[i]
             value_optimizer.zero_grad()
             self.value_compute_grad(value_loss[i], retain_graph)
@@ -115,7 +114,7 @@ class PGTrainer(object):
             param = value_optimizer.param_groups[0]['params']
             for i in range(len(param)):
                 param[i].grad = grad[i]
-            if self.args.grad_clip:
+            if self.args.grad_clip:  # True
                 self.grad_clip(param)
             value_grad_norms.append(get_grad_norm(param))
             value_optimizer.step()
@@ -123,8 +122,9 @@ class PGTrainer(object):
         stat['value_loss'] = value_loss.mean().item()
 
     def run(self, stat):
-        self.behaviour_net.train_process(stat, self)
+        ep_rew = self.behaviour_net.train_process(stat, self)
         self.entr += self.entr_inc
+        return ep_rew
 
     def logging(self, stat):
         for tag, value in stat.items():
@@ -137,5 +137,5 @@ class PGTrainer(object):
         action_loss = stat.get('action_loss', 0)
         value_loss = stat.get('value_loss', 0)
         entropy = stat.get('entropy', 0)
-        print ('Episode: {:4d}, Mean Reward: {:2.4f}, Action Loss: {:2.4f}, Value Loss is: {:2.4f}, Entropy: {:2.4f}\n'\
-        .format(self.episodes, stat['mean_reward'], action_loss+self.entr*entropy, value_loss, entropy))
+        print('Episode: {:4d}, Mean Reward: {:2.4f}, Action Loss: {:2.4f}, Value Loss is: {:2.4f}, Entropy: {:2.4f}\n' \
+              .format(self.episodes, stat['mean_reward'], action_loss + self.entr * entropy, value_loss, entropy))

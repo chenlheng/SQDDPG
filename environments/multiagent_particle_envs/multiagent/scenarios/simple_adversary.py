@@ -117,7 +117,6 @@ class Scenario(BaseScenario):
                 adv_rew += 5
             return adv_rew
 
-
     def observation(self, agent, world):
         # get positions of all entities in this agent's reference frame
         entity_pos = []

@@ -1,7 +1,6 @@
 import numpy as np
 
 
-
 def inspector(args):
     if args.model_name is 'maddpg':
         assert args.replay is True

@@ -7,3 +7,7 @@ utilities/__pycache__/
 environments/__pycache__/
 tensorboard/
 arguments.py
+
+.idea/
+
+.DS_Store

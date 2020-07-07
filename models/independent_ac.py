@@ -7,7 +7,6 @@ from collections import namedtuple
 from learning_algorithms.actor_critic import *
 
 
-
 class IndependentAC(Model):
 
     def __init__(self, args, target_net=None):
@@ -20,7 +19,6 @@ class IndependentAC(Model):
         self.Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'done', 'last_step'))
         self.rl = ActorCritic(self.args)
 
-
     def construct_policy_net(self):
         # TODO: fix policy params update
         action_dicts = []
@@ -29,44 +27,44 @@ class IndependentAC(Model):
             l2 = nn.Linear(self.hid_dim, self.hid_dim)
             a = nn.Linear(self.hid_dim, self.act_dim)
             for i in range(self.n_):
-                action_dicts.append(nn.ModuleDict( {'layer_1': l1,\
-                                                    'layer_2': l2,\
-                                                    'action_head': a
-                                                    }
-                                                 )
-                                   )
+                action_dicts.append(nn.ModuleDict({'layer_1': l1, \
+                                                   'layer_2': l2, \
+                                                   'action_head': a
+                                                   }
+                                                  )
+                                    )
         else:
             for i in range(self.n_):
-                action_dicts.append(nn.ModuleDict( {'layer_1': nn.Linear(self.obs_dim, self.hid_dim),\
-                                                    'layer_2': nn.Linear(self.hid_dim, self.hid_dim),\
-                                                    'action_head': nn.Linear(self.hid_dim, self.act_dim)
-                                                    }
+                action_dicts.append(nn.ModuleDict({'layer_1': nn.Linear(self.obs_dim, self.hid_dim), \
+                                                   'layer_2': nn.Linear(self.hid_dim, self.hid_dim), \
+                                                   'action_head': nn.Linear(self.hid_dim, self.act_dim)
+                                                   }
                                                   )
-                                   )
+                                    )
         self.action_dicts = nn.ModuleList(action_dicts)
 
     def construct_value_net(self):
         # TODO: policy params update
         value_dicts = []
         if self.args.shared_parameters:
-            l1 = nn.Linear(self.obs_dim, self.hid_dim )
+            l1 = nn.Linear(self.obs_dim, self.hid_dim)
             l2 = nn.Linear(self.hid_dim, self.hid_dim)
             v = nn.Linear(self.hid_dim, self.act_dim)
             for i in range(self.n_):
-                value_dicts.append(nn.ModuleDict( {'layer_1': l1,\
-                                                   'layer_2': l2,\
-                                                   'value_head': v
+                value_dicts.append(nn.ModuleDict({'layer_1': l1, \
+                                                  'layer_2': l2, \
+                                                  'value_head': v
                                                   }
-                                                )
-                                  )
+                                                 )
+                                   )
         else:
             for i in range(self.n_):
-                value_dicts.append(nn.ModuleDict( {'layer_1': nn.Linear(self.obs_dim, self.hid_dim ),\
-                                                   'layer_2': nn.Linear(self.hid_dim, self.hid_dim),\
-                                                   'value_head': nn.Linear(self.hid_dim, self.act_dim)
+                value_dicts.append(nn.ModuleDict({'layer_1': nn.Linear(self.obs_dim, self.hid_dim), \
+                                                  'layer_2': nn.Linear(self.hid_dim, self.hid_dim), \
+                                                  'value_head': nn.Linear(self.hid_dim, self.act_dim)
                                                   }
-                                                )
-                                  )
+                                                 )
+                                   )
         self.value_dicts = nn.ModuleList(value_dicts)
 
     def construct_model(self):
@@ -77,20 +75,19 @@ class IndependentAC(Model):
         # TODO: policy params update
         actions = []
         for i in range(self.n_):
-            h = torch.relu( self.action_dicts[i]['layer_1'](obs[:, i, :]) )
-            h = torch.relu( self.action_dicts[i]['layer_2'](h) )
+            h = torch.relu(self.action_dicts[i]['layer_1'](obs[:, i, :]))
+            h = torch.relu(self.action_dicts[i]['layer_2'](h))
             a = self.action_dicts[i]['action_head'](h)
             actions.append(a)
         actions = torch.stack(actions, dim=1)
         return actions
 
-
     def value(self, obs, act=None):
         # TODO: policy params update
         values = []
         for i in range(self.n_):
-            h = torch.relu( self.value_dicts[i]['layer_1'](obs[:,i,:]) )
-            h = torch.relu( self.value_dicts[i]['layer_2'](h) )
+            h = torch.relu(self.value_dicts[i]['layer_1'](obs[:, i, :]))
+            h = torch.relu(self.value_dicts[i]['layer_2'](h))
             v = self.value_dicts[i]['value_head'](h)
             values.append(v)
         values = torch.stack(values, dim=1)

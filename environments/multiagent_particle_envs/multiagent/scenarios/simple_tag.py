@@ -5,8 +5,9 @@ import numpy as np
 from multiagent.core import World, Agent, Landmark, Action
 from multiagent.scenario import BaseScenario
 
+
 # By Yuan Zhang:
-def random_action(agent,world):
+def random_action(agent, world):
     action = Action()
     action.u = np.zeros(world.dim_p)
     action.c = np.zeros(world.dim_c)
@@ -23,6 +24,7 @@ def random_action(agent,world):
         sensitivity = agent.accel
     action.u *= sensitivity
     return action
+
 
 class Scenario(BaseScenario):
     def make_world(self):
@@ -43,9 +45,9 @@ class Scenario(BaseScenario):
             agent.silent = True
             agent.adversary = True if i < num_adversaries else False
             agent.size = 0.075 if agent.adversary else 0.05
-            agent.accel = 3.0 if agent.adversary else 4.0 # 3.0 4.0
-            #agent.accel = 20.0 if agent.adversary else 25.0
-            agent.max_speed = 1.0 if agent.adversary else 1.3 # 1.0 1.3
+            agent.accel = 3.0 if agent.adversary else 4.0  # 3.0 4.0
+            # agent.accel = 20.0 if agent.adversary else 25.0
+            agent.max_speed = 1.0 if agent.adversary else 1.3  # 1.0 1.3
             # By Yuan Zhang:
             agent.action_callback = random_action if not agent.adversary else None
 
@@ -55,13 +57,12 @@ class Scenario(BaseScenario):
             landmark.name = 'landmark %d' % i
             landmark.collide = True
             landmark.movable = False
-            landmark.size = 0.2 # 0.2
+            landmark.size = 0.2  # 0.2
             landmark.boundary = False
         # make initial conditions
         self.reset_world(world)
         self.done = False
         return world
-
 
     def reset_world(self, world):
         self.done = False
@@ -81,7 +82,6 @@ class Scenario(BaseScenario):
                 landmark.state.p_pos = np.random.uniform(-0.9, +0.9, world.dim_p)
                 landmark.state.p_vel = np.zeros(world.dim_p)
 
-
     def benchmark_data(self, agent, world):
         # returns data for benchmarking purposes
         if agent.adversary:
@@ -92,7 +92,6 @@ class Scenario(BaseScenario):
             return collisions
         else:
             return 0
-
 
     def is_collision(self, agent1, agent2):
         delta_pos = agent1.state.p_pos - agent2.state.p_pos
@@ -107,7 +106,6 @@ class Scenario(BaseScenario):
     # return all adversarial agents
     def adversaries(self, world):
         return [agent for agent in world.agents if agent.adversary]
-
 
     def reward(self, agent, world):
         # Agents are rewarded based on minimum agent distance to each landmark
@@ -134,6 +132,7 @@ class Scenario(BaseScenario):
             if x < 1.0:
                 return (x - 0.9) * 10
             return min(np.exp(2 * x - 2), 10)
+
         for p in range(world.dim_p):
             x = abs(agent.state.p_pos[p])
             rew -= bound(x)
@@ -143,7 +142,7 @@ class Scenario(BaseScenario):
     def adversary_reward(self, agent, world):
         # Adversaries are rewarded for collisions with agents
         rew = 0
-        shape = True # False
+        shape = True  # False
         agents = self.good_agents(world)
         adversaries = self.adversaries(world)
         if shape:  # reward can optionally be shaped (decreased reward for increased distance from agents)

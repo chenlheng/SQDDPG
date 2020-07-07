@@ -3,7 +3,6 @@ import torch
 from utilities.util import *
 
 
-
 class ActorCritic(ReinforcementLearning):
 
     def __init__(self, args):
@@ -22,7 +21,7 @@ class ActorCritic(ReinforcementLearning):
         action_out = behaviour_net.policy(state)
         values = behaviour_net.value(state, actions)
         if self.args.q_func:
-            values = torch.sum(values*actions, dim=-1)
+            values = torch.sum(values * actions, dim=-1)
         values = values.contiguous().view(-1, n)
         if target_net == None:
             next_action_out = behaviour_net.policy(next_state)
@@ -31,7 +30,7 @@ class ActorCritic(ReinforcementLearning):
         next_actions = select_action(self.args, next_action_out, status='train')
         next_values = behaviour_net.value(next_state, next_actions)
         if self.args.q_func:
-            next_values = torch.sum(next_values*next_actions, dim=-1)
+            next_values = torch.sum(next_values * next_actions, dim=-1)
         next_values = next_values.contiguous().view(-1, n)
         returns = cuda_wrapper(torch.zeros((batch_size, n), dtype=torch.float), self.cuda_)
         # calculate the advantages
@@ -49,7 +48,7 @@ class ActorCritic(ReinforcementLearning):
         if self.args.normalize_advantages:
             advantages = batchnorm(advantages)
         # construct the action loss and the value loss
-        log_prob_a = multinomials_log_density(actions, action_out).contiguous().view(-1,n)
+        log_prob_a = multinomials_log_density(actions, action_out).contiguous().view(-1, n)
         assert log_prob_a.size() == advantages.size()
         action_loss = -advantages * log_prob_a
         action_loss = action_loss.mean(dim=0)

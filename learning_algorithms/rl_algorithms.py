@@ -5,7 +5,6 @@ import torch.nn as nn
 from utilities.util import *
 
 
-
 class ReinforcementLearning(object):
 
     def __init__(self, name, args):
@@ -14,7 +13,7 @@ class ReinforcementLearning(object):
         self.cuda_ = torch.cuda.is_available() and self.args.cuda
 
     def __str__(self):
-        print (self.name)
+        print(self.name)
 
     def __call__(self):
         raise NotImplementedError()

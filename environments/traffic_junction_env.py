@@ -28,14 +28,16 @@ from gym import spaces
 from environments.traffic_helper import *
 import copy
 
-def nPr(n,r):
+
+def nPr(n, r):
     f = math.factorial
-    return f(n)//f(n-r)
+    return f(n) // f(n - r)
+
 
 class TrafficJunctionEnv(gym.Env):
     # metadata = {'render.modes': ['human']}
 
-    def __init__(self,):
+    def __init__(self, ):
         self.name = "traffic_junction"
         self.__version__ = "0.0.1"
 
@@ -49,43 +51,43 @@ class TrafficJunctionEnv(gym.Env):
         self.episode_over = False
         self.has_failed = 0
 
-        self.difficulty = 'hard' # Difficulty level, easy|medium|hard
+        self.difficulty = 'hard'  # Difficulty level, easy|medium|hard
         # init_args
-        self.vision = 1 # Vision of car ### 0
+        self.vision = 1  # Vision of car ### 0
         if self.difficulty == 'easy':
-            self.dim = 6 # Dimension of box (i.e length of road) # easy:6 | medium:14
-            self.add_rate_min = 0.1 # min rate at which to add car (till curr. start) # easy:0.1 | medium:0.05
-            self.add_rate_max = 0.3 # max rate at which to add car (till curr. start) # easy:0.3 | medium:0.2
-            self.ncar = self.n = 5 # Number of cars  easy:5 | medium:10
-        elif self.difficulty=='medium':
-            self.dim = 14 # Dimension of box (i.e length of road) # easy:6 | medium:14
-            self.add_rate_min = 0.05 # min rate at which to add car (till curr. start) # easy:0.1 | medium:0.05
-            self.add_rate_max = 0.2 # max rate at which to add car (till curr. start) # easy:0.3 | medium:0.2
-            self.ncar = self.n = 10 # Number of cars  easy:5 | medium:10
-        elif self.difficulty=='hard':
-            self.dim = 18 # Dimension of box (i.e length of road) # easy:6 | medium:14
-            self.add_rate_min = 0.02 # min rate at which to add car (till curr. start) # easy:0.1 | medium:0.05
-            self.add_rate_max = 0.05 # max rate at which to add car (till curr. start) # easy:0.3 | medium:0.2
-            self.ncar = self.n = 20 # Number of cars  easy:5 | medium:10
+            self.dim = 6  # Dimension of box (i.e length of road) # easy:6 | medium:14
+            self.add_rate_min = 0.1  # min rate at which to add car (till curr. start) # easy:0.1 | medium:0.05
+            self.add_rate_max = 0.3  # max rate at which to add car (till curr. start) # easy:0.3 | medium:0.2
+            self.ncar = self.n = 5  # Number of cars  easy:5 | medium:10
+        elif self.difficulty == 'medium':
+            self.dim = 14  # Dimension of box (i.e length of road) # easy:6 | medium:14
+            self.add_rate_min = 0.05  # min rate at which to add car (till curr. start) # easy:0.1 | medium:0.05
+            self.add_rate_max = 0.2  # max rate at which to add car (till curr. start) # easy:0.3 | medium:0.2
+            self.ncar = self.n = 10  # Number of cars  easy:5 | medium:10
+        elif self.difficulty == 'hard':
+            self.dim = 18  # Dimension of box (i.e length of road) # easy:6 | medium:14
+            self.add_rate_min = 0.02  # min rate at which to add car (till curr. start) # easy:0.1 | medium:0.05
+            self.add_rate_max = 0.05  # max rate at which to add car (till curr. start) # easy:0.3 | medium:0.2
+            self.ncar = self.n = 20  # Number of cars  easy:5 | medium:10
         else:
             raise NotImplementedError
 
-        self.curr_start = np.inf # start making harder after this many epochs [0] #
-        self.curr_end = np.inf # when to make the game hardest [0] #
-        self.vocab_type = 'bool' # Type of location vector to use, bool|scalar
+        self.curr_start = np.inf  # start making harder after this many epochs [0] #
+        self.curr_end = np.inf  # when to make the game hardest [0] #
+        self.vocab_type = 'bool'  # Type of location vector to use, bool|scalar
 
         self.dims = dims = (self.dim, self.dim)
         difficulty = self.difficulty
         vision = self.vision
 
-        if difficulty in ['medium','easy']:
-            assert dims[0]%2 == 0, 'Only even dimension supported for now.'
+        if difficulty in ['medium', 'easy']:
+            assert dims[0] % 2 == 0, 'Only even dimension supported for now.'
 
             assert dims[0] >= 4 + vision, 'Min dim: 4 + vision'
 
         if difficulty == 'hard':
             assert dims[0] >= 9, 'Min dim: 9'
-            assert dims[0]%3 ==0, 'Hard version works for multiple of 3. dim. only.'
+            assert dims[0] % 3 == 0, 'Hard version works for multiple of 3. dim. only.'
 
         # Add rate
         self.exact_rate = self.add_rate = self.add_rate_min
@@ -102,16 +104,16 @@ class TrafficJunctionEnv(gym.Env):
             for i in range(len(self.dims)):
                 self.dims[i] += 1
 
-        nroad = {'easy':2,
-                'medium':4,
-                'hard':8}
+        nroad = {'easy': 2,
+                 'medium': 4,
+                 'hard': 8}
 
         dim_sum = dims[0] + dims[1]
-        base = {'easy':   dim_sum,
+        base = {'easy': dim_sum,
                 'medium': 2 * dim_sum,
-                'hard':   4 * dim_sum}
+                'hard': 4 * dim_sum}
 
-        self.npath = nPr(nroad[difficulty],2)
+        self.npath = nPr(nroad[difficulty], 2)
 
         # Setting max vocab size for 1-hot encoding
         if self.vocab_type == 'bool':
@@ -120,7 +122,7 @@ class TrafficJunctionEnv(gym.Env):
             self.CAR_CLASS += self.BASE
             # car_type + base + outside + 0-index
             self.vocab_size = 1 + self.BASE + 1 + 1
-            self.obs_dim = self.naction + self.npath + self.vocab_size*(2*self.vision+1)*(2*self.vision+1)
+            self.obs_dim = self.naction + self.npath + self.vocab_size * (2 * self.vision + 1) * (2 * self.vision + 1)
         else:
             raise NotImplementedError
 
@@ -140,8 +142,8 @@ class TrafficJunctionEnv(gym.Env):
         return
 
     def _flatten_obs(self, obs):
-        _obs=[]
-        for agent_obs in obs: #list/tuple of observations.
+        _obs = []
+        for agent_obs in obs:  # list/tuple of observations.
             agent_onehot = self._onehot(agent_obs[0], self.naction)
             path_onehot = self._onehot(agent_obs[1], self.npath)
             vision_onehot = np.array(agent_obs[2]).flatten()
@@ -149,13 +151,11 @@ class TrafficJunctionEnv(gym.Env):
             _obs.append(np.concatenate(agent_obs))
         return _obs
 
-
     def _onehot(self, a, n):
         # a is a number
         # return 1*n one hot vector
-        eye = np.eye(n,dtype=np.int32)
+        eye = np.eye(n, dtype=np.int32)
         return eye[int(a)]
-
 
     def reset(self, epoch=None):
         """
@@ -180,11 +180,11 @@ class TrafficJunctionEnv(gym.Env):
         # Current car to enter system
         # self.car_i = 0
         # Ids i.e. indexes
-        self.car_ids = np.arange(self.CAR_CLASS,self.CAR_CLASS + self.ncar)
+        self.car_ids = np.arange(self.CAR_CLASS, self.CAR_CLASS + self.ncar)
 
         # Starting loc of car: a place where everything is outside class
-        self.car_loc = np.zeros((self.ncar, len(self.dims)),dtype=int)
-        self.car_last_act = np.zeros(self.ncar, dtype=int) # last act GAS when awake
+        self.car_loc = np.zeros((self.ncar, len(self.dims)), dtype=int)
+        self.car_last_act = np.zeros(self.ncar, dtype=int)  # last act GAS when awake
 
         self.car_route_loc = np.full(self.ncar, - 1)
 
@@ -240,13 +240,13 @@ class TrafficJunctionEnv(gym.Env):
         self.stat['success'] = 1.0 - self.has_failed
         self.stat['add_rate'] = self.add_rate
 
-        debug = {'car_loc':self.car_loc,
-                'alive_mask': np.copy(self.alive_mask),
-                'wait': self.wait,
-                'cars_in_sys': self.cars_in_sys,
-                'is_completed': np.copy(self.is_completed),
-                'success': self.stat['success']
-                }
+        debug = {'car_loc': self.car_loc,
+                 'alive_mask': np.copy(self.alive_mask),
+                 'wait': self.wait,
+                 'cars_in_sys': self.cars_in_sys,
+                 'is_completed': np.copy(self.is_completed),
+                 'success': self.stat['success']
+                 }
 
         return self._flatten_obs(obs), reward, self.episode_over, debug
 
@@ -258,14 +258,14 @@ class TrafficJunctionEnv(gym.Env):
         grid[grid == self.OUTSIDE_CLASS] = ''
         self.stdscr.clear()
         for i, p in enumerate(self.car_loc):
-            if self.car_last_act[i] == 0: # GAS
+            if self.car_last_act[i] == 0:  # GAS
                 if grid[p[0]][p[1]] != 0:
-                    grid[p[0]][p[1]] = str(grid[p[0]][p[1]]).replace('_','') + '<>'
+                    grid[p[0]][p[1]] = str(grid[p[0]][p[1]]).replace('_', '') + '<>'
                 else:
                     grid[p[0]][p[1]] = '<>'
-            else: # BRAKE
+            else:  # BRAKE
                 if grid[p[0]][p[1]] != 0:
-                    grid[p[0]][p[1]] = str(grid[p[0]][p[1]]).replace('_','') + '<b>'
+                    grid[p[0]][p[1]] = str(grid[p[0]][p[1]]).replace('_', '') + '<b>'
                 else:
                     grid[p[0]][p[1]] = '<b>'
 
@@ -274,16 +274,16 @@ class TrafficJunctionEnv(gym.Env):
                 if row_num == idx == 0:
                     continue
                 if item != '_':
-                    if '<>' in item and len(item) > 3: #CRASH, one car accelerates
-                        self.stdscr.addstr(row_num, idx * 4, item.replace('b','').center(3), curses.color_pair(2))
-                    elif '<>' in item: #GAS
+                    if '<>' in item and len(item) > 3:  # CRASH, one car accelerates
+                        self.stdscr.addstr(row_num, idx * 4, item.replace('b', '').center(3), curses.color_pair(2))
+                    elif '<>' in item:  # GAS
                         self.stdscr.addstr(row_num, idx * 4, item.center(3), curses.color_pair(1))
-                    elif 'b' in item and len(item) > 3: #CRASH
-                        self.stdscr.addstr(row_num, idx * 4, item.replace('b','').center(3), curses.color_pair(2))
+                    elif 'b' in item and len(item) > 3:  # CRASH
+                        self.stdscr.addstr(row_num, idx * 4, item.replace('b', '').center(3), curses.color_pair(2))
                     elif 'b' in item:
-                        self.stdscr.addstr(row_num, idx * 4, item.replace('b','').center(3), curses.color_pair(5))
+                        self.stdscr.addstr(row_num, idx * 4, item.replace('b', '').center(3), curses.color_pair(5))
                     else:
-                        self.stdscr.addstr(row_num, idx * 4, item.center(3),  curses.color_pair(2))
+                        self.stdscr.addstr(row_num, idx * 4, item.center(3), curses.color_pair(2))
                 else:
                     self.stdscr.addstr(row_num, idx * 4, '_'.center(3), curses.color_pair(4))
 
@@ -301,7 +301,7 @@ class TrafficJunctionEnv(gym.Env):
         w, h = self.dims
 
         # Mark the roads
-        roads = get_road_blocks(w,h, self.difficulty)
+        roads = get_road_blocks(w, h, self.difficulty)
         for road in roads:
             self.grid[road] = self.ROAD_CLASS
         if self.vocab_type == 'bool':
@@ -313,7 +313,7 @@ class TrafficJunctionEnv(gym.Env):
                 start += sz
 
         # Padding for vision
-        self.pad_grid = np.pad(self.grid, self.vision, 'constant', constant_values = self.OUTSIDE_CLASS)
+        self.pad_grid = np.pad(self.grid, self.vision, 'constant', constant_values=self.OUTSIDE_CLASS)
 
         self.empty_bool_base_grid = self._onehot_initialization(self.pad_grid)
 
@@ -325,24 +325,22 @@ class TrafficJunctionEnv(gym.Env):
         for i, p in enumerate(self.car_loc):
             self.bool_base_grid[p[0] + self.vision, p[1] + self.vision, self.CAR_CLASS] += 1
 
-
         # remove the outside class.
         if self.vocab_type == 'scalar':
-            self.bool_base_grid = self.bool_base_grid[:,:,1:]
-
+            self.bool_base_grid = self.bool_base_grid[:, :, 1:]
 
         obs = []
         for i, p in enumerate(self.car_loc):
             # most recent action
             # act = self.car_last_act[i] / (self.naction - 1)
-            act = self.car_last_act[i] 
+            act = self.car_last_act[i]
 
             # route id
             # r_i = self.route_id[i] / (self.npath - 1)
-            r_i = self.route_id[i] 
+            r_i = self.route_id[i]
 
             # loc
-            p_norm = p / (h-1, w-1)
+            p_norm = p / (h - 1, w - 1)
 
             # vision square
             slice_y = slice(p[0], p[0] + (2 * self.vision) + 1)
@@ -366,7 +364,6 @@ class TrafficJunctionEnv(gym.Env):
 
         return obs
 
-
     def _add_cars(self):
         for r_i, routes in enumerate(self.routes):
             if self.cars_in_sys >= self.ncar:
@@ -374,7 +371,6 @@ class TrafficJunctionEnv(gym.Env):
 
             # Add car to system and set on path
             if np.random.uniform() <= self.add_rate:
-
                 # chose dead car on random
                 idx = self._choose_dead()
                 # make it alive
@@ -401,18 +397,17 @@ class TrafficJunctionEnv(gym.Env):
         }
 
         # 0 refers to UP to DOWN, type 0
-        full = [(i, w//2) for i in range(h)]
+        full = [(i, w // 2) for i in range(h)]
         self.routes['TOP'].append(np.array([*full]))
 
         # 1 refers to LEFT to RIGHT, type 0
-        full = [(h//2, i) for i in range(w)]
+        full = [(h // 2, i) for i in range(w)]
         self.routes['LEFT'].append(np.array([*full]))
 
         self.routes = list(self.routes.values())
 
-
     def _set_paths_medium_old(self):
-        h,w = self.dims
+        h, w = self.dims
         self.routes = {
             'TOP': [],
             'LEFT': [],
@@ -424,62 +419,57 @@ class TrafficJunctionEnv(gym.Env):
         # type 1 paths: take right on junction
         # type 2 paths: take left on junction
 
-
         # 0 refers to UP to DOWN, type 0
-        full = [(i, w//2-1) for i in range(h)]
+        full = [(i, w // 2 - 1) for i in range(h)]
         self.routes['TOP'].append(np.array([*full]))
 
         # 1 refers to UP to LEFT, type 1
-        first_half = full[:h//2]
-        second_half = [(h//2 - 1, i) for i in range(w//2 - 2,-1,-1) ]
+        first_half = full[:h // 2]
+        second_half = [(h // 2 - 1, i) for i in range(w // 2 - 2, -1, -1)]
         self.routes['TOP'].append(np.array([*first_half, *second_half]))
 
         # 2 refers to UP to RIGHT, type 2
-        second_half = [(h//2, i) for i in range(w//2-1, w) ]
+        second_half = [(h // 2, i) for i in range(w // 2 - 1, w)]
         self.routes['TOP'].append(np.array([*first_half, *second_half]))
 
-
         # 3 refers to LEFT to RIGHT, type 0
-        full = [(h//2, i) for i in range(w)]
+        full = [(h // 2, i) for i in range(w)]
         self.routes['LEFT'].append(np.array([*full]))
 
         # 4 refers to LEFT to DOWN, type 1
-        first_half = full[:w//2]
-        second_half = [(i, w//2 - 1) for i in range(h//2+1, h)]
+        first_half = full[:w // 2]
+        second_half = [(i, w // 2 - 1) for i in range(h // 2 + 1, h)]
         self.routes['LEFT'].append(np.array([*first_half, *second_half]))
 
         # 5 refers to LEFT to UP, type 2
-        second_half = [(i, w//2) for i in range(h//2, -1,-1) ]
+        second_half = [(i, w // 2) for i in range(h // 2, -1, -1)]
         self.routes['LEFT'].append(np.array([*first_half, *second_half]))
 
-
         # 6 refers to DOWN to UP, type 0
-        full = [(i, w//2) for i in range(h-1,-1,-1)]
+        full = [(i, w // 2) for i in range(h - 1, -1, -1)]
         self.routes['DOWN'].append(np.array([*full]))
 
         # 7 refers to DOWN to RIGHT, type 1
-        first_half = full[:h//2]
-        second_half = [(h//2, i) for i in range(w//2+1,w)]
+        first_half = full[:h // 2]
+        second_half = [(h // 2, i) for i in range(w // 2 + 1, w)]
         self.routes['DOWN'].append(np.array([*first_half, *second_half]))
 
         # 8 refers to DOWN to LEFT, type 2
-        second_half = [(h//2-1, i) for i in range(w//2,-1,-1)]
+        second_half = [(h // 2 - 1, i) for i in range(w // 2, -1, -1)]
         self.routes['DOWN'].append(np.array([*first_half, *second_half]))
 
-
         # 9 refers to RIGHT to LEFT, type 0
-        full = [(h//2-1, i) for i in range(w-1,-1,-1)]
+        full = [(h // 2 - 1, i) for i in range(w - 1, -1, -1)]
         self.routes['RIGHT'].append(np.array([*full]))
 
         # 10 refers to RIGHT to UP, type 1
-        first_half = full[:w//2]
-        second_half = [(i, w//2) for i in range(h//2 -2, -1,-1)]
+        first_half = full[:w // 2]
+        second_half = [(i, w // 2) for i in range(h // 2 - 2, -1, -1)]
         self.routes['RIGHT'].append(np.array([*first_half, *second_half]))
 
         # 11 refers to RIGHT to DOWN, type 2
-        second_half = [(i, w//2-1) for i in range(h//2-1, h)]
+        second_half = [(i, w // 2 - 1) for i in range(h // 2 - 1, h)]
         self.routes['RIGHT'].append(np.array([*first_half, *second_half]))
-
 
         # PATHS_i: 0 to 11
         # 0 refers to UP to down,
@@ -523,12 +513,11 @@ class TrafficJunctionEnv(gym.Env):
         # Test all paths
         assert self._unittest_path(paths)
 
-
-    def _unittest_path(self,paths):
+    def _unittest_path(self, paths):
         for i, p in enumerate(paths[:-1]):
             next_dif = p - np.row_stack([p[1:], p[-1]])
             next_dif = np.abs(next_dif[:-1])
-            step_jump = np.sum(next_dif, axis =1)
+            step_jump = np.sum(next_dif, axis=1)
             if np.any(step_jump != 1):
                 print("Any", p, i)
                 return False
@@ -536,7 +525,6 @@ class TrafficJunctionEnv(gym.Env):
                 print("All", p, i)
                 return False
         return True
-
 
     def _take_action(self, idx, act):
         # non-active car
@@ -552,7 +540,7 @@ class TrafficJunctionEnv(gym.Env):
             return
 
         # GAS or move
-        if act==0:
+        if act == 0:
             prev = self.car_route_loc[idx]
             self.car_route_loc[idx] += 1
             curr = self.car_route_loc[idx]
@@ -564,7 +552,7 @@ class TrafficJunctionEnv(gym.Env):
                 self.wait[idx] = 0
 
                 # put it at dead loc
-                self.car_loc[idx] = np.zeros(len(self.dims),dtype=int)
+                self.car_loc[idx] = np.zeros(len(self.dims), dtype=int)
                 self.is_completed[idx] = 1
                 return
 
@@ -581,24 +569,23 @@ class TrafficJunctionEnv(gym.Env):
             # Change last act for color:
             self.car_last_act[idx] = 0
 
-
     def _get_reward(self):
         reward = np.full(self.ncar, self.TIMESTEP_PENALTY) * self.wait
 
         for i, l in enumerate(self.car_loc):
-            if (len(np.where(np.all(self.car_loc[:i] == l,axis=1))[0]) or \
-               len(np.where(np.all(self.car_loc[i+1:] == l,axis=1))[0])) and l.any():
-               reward[i] += self.CRASH_PENALTY
-               self.has_failed = 1
+            if (len(np.where(np.all(self.car_loc[:i] == l, axis=1))[0]) or \
+                len(np.where(np.all(self.car_loc[i + 1:] == l, axis=1))[0])) and l.any():
+                reward[i] += self.CRASH_PENALTY
+                self.has_failed = 1
 
         mean_reward = np.mean(self.alive_mask * reward)
-        return [mean_reward]*self.n
+        return [mean_reward] * self.n
 
     def _onehot_initialization(self, a):
         if self.vocab_type == 'bool':
             ncols = self.vocab_size
         else:
-            ncols = self.vocab_size + 1 # 1 is for outside class which will be removed later.
+            ncols = self.vocab_size + 1  # 1 is for outside class which will be removed later.
         out = np.zeros(a.shape + (ncols,), dtype=int)
         out[self._all_idx(a, axis=2)] = 1
         return out
@@ -634,4 +621,3 @@ class TrafficJunctionEnv(gym.Env):
         curses.init_pair(3, curses.COLOR_CYAN, -1)
         curses.init_pair(4, curses.COLOR_GREEN, -1)
         curses.init_pair(5, curses.COLOR_BLUE, -1)
-

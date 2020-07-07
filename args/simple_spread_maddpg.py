@@ -5,8 +5,6 @@ from utilities.gym_wrapper import *
 import numpy as np
 from aux import *
 
-
-
 '''define the model name'''
 model_name = 'maddpg'
 
@@ -19,16 +17,17 @@ aux_args = AuxArgs[model_name]()
 alias = '_new_3'
 
 '''load scenario from script'''
-scenario = scenario.load(scenario_name+".py").Scenario()
+scenario = scenario.load(scenario_name + ".py").Scenario()
 
 '''create world'''
 world = scenario.make_world()
 
 '''create multiagent environment'''
-env = MultiAgentEnv(world, scenario.reset_world, scenario.reward, scenario.observation, info_callback=None, shared_viewer=True)
+env = MultiAgentEnv(world, scenario.reset_world, scenario.reward, scenario.observation, info_callback=None,
+                    shared_viewer=True)
 env = GymWrapper(env)
 
-MergeArgs = namedtuple('MergeArgs', Args._fields+AuxArgs[model_name]._fields)
+MergeArgs = namedtuple('MergeArgs', Args._fields + AuxArgs[model_name]._fields)
 
 # under offline trainer if set batch_size=replay_buffer_size=update_freq -> epoch update
 args = Args(model_name=model_name,
@@ -41,14 +40,15 @@ args = Args(model_name=model_name,
             policy_lrate=1e-4,
             value_lrate=1e-3,
             max_steps=200,
-            batch_size=32,
+            batch_size=1024,
             gamma=0.9,
             normalize_advantages=False,
             entr=1e-3,
             entr_inc=0.0,
             action_num=np.max(env.get_input_shape_of_act()),
             q_func=True,
-            train_episodes_num=int(5e3),
+            train_episodes_num=int(6e4),  # 6e4
+            # train_episodes_num=int(5e3),  # 6e4
             replay=True,
             replay_buffer_size=1e4,
             replay_warmup=0,
@@ -65,8 +65,8 @@ args = Args(model_name=model_name,
             online=True,
             reward_record_type='episode_mean_step',
             shared_parameters=False
-           )
+            )
 
-args = MergeArgs(*(args+aux_args))
+args = MergeArgs(*(args + aux_args))
 
 log_name = scenario_name + '_' + model_name + alias
